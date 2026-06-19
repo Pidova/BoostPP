@@ -1,168 +1,188 @@
+#pragma once
 #include <array>
 #include <cstdint>
 #include <stdexcept>
 
 namespace boost {
 
-      template <typename T, std::size_t N>
+      template <typename T, std::size_t N, typename NT = std::size_t>
       class fixed_vector {
           public:
-            constexpr fixed_vector()
-                : size_(0) {
+            inline constexpr fixed_vector()
+                : msize(0) {
             }
+            inline constexpr fixed_vector(std::initializer_list<T> init_list)
+                : msize(init_list.size()) {
 
-            constexpr fixed_vector(std::initializer_list<T> init_list)
-                : size_(init_list.size()) {
-
-                  static_assert(init_list.size() <= N, "Initializer list exceeds maximum size");
-                  if (init_list.size() > N) {
+                  if (init_list.size() > N) [[unlikely]] {
                         throw std::out_of_range("Initializer list exceeds maximum size");
                   }
-                  std::copy_n(init_list.begin(), this->size_, this->data.begin());
+                  NT i = 0u;
+                  for (auto v : init_list) {
+                        this->mdata[i++] = v;
+                  }
                   return;
             }
 
             using iterator = typename std::array<T, N>::iterator;
             using const_iterator = typename std::array<T, N>::const_iterator;
 
-            constexpr std::size_t max_size() const {
+            inline constexpr auto max_size() const {
                   return N;
             }
-            constexpr std::size_t size() const {
-                  return this->size_;
+            inline constexpr auto size() const {
+                  return this->msize;
             }
-            constexpr bool empty() const {
+            inline constexpr auto empty() const {
                   return !this->size();
             }
-            constexpr void push_back(const T &value) {
-                  if (this->size_ >= N) {
+            inline constexpr auto push_back(const T &value) {
+                  if (this->msize >= N) [[unlikely]] {
                         throw std::out_of_range("Overflow");
                   }
-                  this->data[this->size_++] = value;
+                  this->mdata[this->msize++] = value;
                   return;
             }
-            constexpr void push_back(T &&value) {
-                  if (this->size_ >= N) {
+            inline constexpr auto push_back(T &&value) {
+                  if (this->msize >= N) [[unlikely]] {
                         throw std::out_of_range("Overflow");
                   }
-                  this->data[this->size_++] = std::move(value);
+                  this->mdata[this->msize++] = std::move(value);
                   return;
             }
-            constexpr void pop_back() {
-                  if (!this->size_) {
+            template <typename... Args>
+            inline constexpr void emplace_back(Args &&...args) {
+                  if (this->msize >= N) [[unlikely]] {
+                        throw std::out_of_range("Overflow");
+                  }
+                  new (&this->mdata[this->msize]) T(std::forward<Args>(args)...);
+                  ++this->msize;
+                  return;
+            }
+            inline constexpr auto pop_back() {
+                  if (!this->msize) [[unlikely]] {
                         throw std::out_of_range("Underflow");
                   }
-                  --this->size_;
+                  --this->msize;
                   return;
             }
-            constexpr T &at(const std::size_t idx) {
-                  if (idx >= this->size_) {
+            inline constexpr T &at(const NT idx) {
+                  if (idx >= this->msize) [[unlikely]] {
                         throw std::out_of_range("Index out of range");
                   }
-                  return this->data[idx];
+                  return this->mdata[idx];
             }
-            constexpr const T &at(const std::size_t idx) const {
-                  if (idx >= size_) {
+            inline constexpr const T &at(const NT idx) const {
+                  if (idx >= msize) [[unlikely]] {
                         throw std::out_of_range("Index out of range");
                   }
-                  return this->data[idx];
+                  return this->mdata[idx];
             }
-            constexpr void clear() {
-                  this->size_ = 0u;
+            inline constexpr auto clear() {
+                  this->msize = 0u;
                   return;
             }
-            constexpr void erase(const T &data) {
-                  std::size_t result = 0u;
-                  for (auto i = 0u; i < this->size_ - 1u; ++i) {
-                        const auto &val = this->data[i];
+            inline constexpr auto erase(const T &data) {
+                  NT result = 0u;
+                  for (auto i = 0u; i < this->msize - 1u; ++i) {
+                        const auto &val = this->mdata[i];
                         if (val != data) {
-                              this->data[result++] = val;
+                              this->mdata[result++] = val;
                         }
                   }
-                  this->size_ = result;
+                  this->msize = result;
                   return;
             }
-            constexpr std::size_t count(const T &data) const {
-                  std::size_t result = 0u;
-                  for (auto i = 0u; i < this->size_; ++i) {
-                        result += this->data[i] == data;
+            inline constexpr auto count(const T &data) const {
+                  NT result = 0u;
+                  for (auto i = 0u; i < this->msize; ++i) {
+                        result += this->mdata[i] == data;
                   }
                   return result;
             }
-            constexpr auto find(const T &value) {
-                  for (auto i = 0u; i < this->size_; ++i) {
-                        if (this->data[i] == value) {
-                              return this->data.begin() + i;
+            inline constexpr auto find(const T &value) {
+                  for (auto i = 0u; i < this->msize; ++i) {
+                        if (this->mdata[i] == value) {
+                              return this->mdata.begin() + i;
                         }
                   }
-                  return this->data.begin() + this->size_;
+                  return this->mdata.begin() + this->msize;
             }
-            constexpr auto find(const T &value) const {
-                  for (auto i = 0u; i < this->size_; ++i) {
-                        if (this->data[i] == value) {
-                              return this->data.begin() + i;
+            inline constexpr auto find(const T &value) const {
+                  for (auto i = 0u; i < this->msize; ++i) {
+                        if (this->mdata[i] == value) {
+                              return this->mdata.begin() + i;
                         }
                   }
-                  return this->data.begin() + this->size_;
+                  return this->mdata.begin() + this->msize;
             }
-            constexpr T &operator[](const std::size_t idx) {
-                  return this->data[idx];
+            inline constexpr auto &operator[](const NT idx) {
+                  return this->mdata[idx];
             }
-            constexpr const T &operator[](const std::size_t idx) const {
-                  return this->data[idx];
+            inline constexpr const auto &operator[](const NT idx) const {
+                  return this->mdata[idx];
             }
-            constexpr auto front() {
-                  return this->data[0u];
+            inline constexpr auto front() {
+                  return this->mdata[0u];
             }
-            constexpr auto back() {
-                  auto idx = this->size_;
+            inline constexpr auto back() {
+                  auto idx = this->msize;
                   if (idx) {
                         --idx;
                   }
-                  return this->data[idx];
+                  return this->mdata[idx];
             }
-            constexpr auto front() const {
-                  return this->data[0u];
+            inline constexpr auto front() const {
+                  return this->mdata[0u];
             }
-            constexpr auto back() const {
-                  auto idx = this->size_;
+            inline constexpr auto back() const {
+                  auto idx = this->msize;
                   if (idx) {
                         --idx;
                   }
-                  return this->data[idx];
+                  return this->mdata[idx];
             }
-
-            constexpr auto begin() {
-                  return this->data.begin();
+            inline constexpr auto begin() {
+                  return this->mdata.begin();
             }
-            constexpr auto end() {
-                  return this->data.begin() + this->size_;
+            inline constexpr auto end() {
+                  return this->mdata.begin() + this->msize;
             }
-            constexpr auto rbegin() {
-                  return this->data.rbegin();
+            inline constexpr auto rbegin() {
+                  return this->mdata.rbegin();
             }
-            constexpr auto rend() {
-                  return this->data.rend();
+            inline constexpr auto rend() {
+                  return this->mdata.rend();
             }
-            constexpr auto begin() const {
-                  return this->data.begin();
+            inline constexpr auto begin() const {
+                  return this->mdata.begin();
             }
-            constexpr auto end() const {
-                  return this->data.begin() + this->size_;
+            inline constexpr auto end() const {
+                  return this->mdata.begin() + this->msize;
             }
-            constexpr auto rbegin() const {
-                  return this->data.rbegin();
+            inline constexpr auto rbegin() const {
+                  return this->mdata.rbegin();
             }
-            constexpr auto rend() const {
-                  return this->data.rend();
+            inline constexpr auto rend() const {
+                  return this->mdata.rend();
             }
-            constexpr auto contains_idx(const std::size_t idx) const {
-                  return idx < this->size_;
+            inline constexpr auto contains_idx(const std::size_t idx) const {
+                  return idx < this->msize;
+            }
+            inline constexpr auto data() noexcept {
+                  return this->mdata.data();
+            }
+            inline constexpr auto data() const noexcept {
+                  return this->mdata.data();
+            }
+            inline constexpr auto resize(const NT size) {
+                  this->msize = size;
+                  return;
             }
 
           private:
-            std::array<T, N> data;
-            std::size_t size_ = 0u;
+            std::array<T, N> mdata{};
+            NT msize = 0u;
       };
 
 } // namespace boost

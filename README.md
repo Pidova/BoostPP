@@ -1,6 +1,6 @@
 # Boost-PP
 
-A lightweight and efficient C++ utility library for extending boost.
+A lightweight and efficient C++ header-only utility library for extending boost.
 
 ## Overview
 

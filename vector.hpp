@@ -9,7 +9,8 @@ namespace boost {
       template <typename T, std::size_t N, typename NT = std::size_t>
       class fixed_vector {
           public:
-            /** @brief Constructs an empty fixed vector. */
+		  
+            /* Constructs an empty fixed vector. */
             inline constexpr fixed_vector()
                 : msize(static_cast<NT>(0)) {
             }
@@ -136,7 +137,7 @@ namespace boost {
                   return this->mdata.begin() + this->msize;
             }
 
-            /* Unchecked element access. @param idx Index to look up. */
+            /* Unchecked element access. */
             inline constexpr auto &operator[](const NT idx) {
                   return this->mdata[idx];
             }

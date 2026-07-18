@@ -5,14 +5,16 @@
 
 namespace boost {
 
+      /* A fixed-capacity vector that mimics std::vector but allocates inline memory. */
       template <typename T, std::size_t N, typename NT = std::size_t>
       class fixed_vector {
           public:
+            /** @brief Constructs an empty fixed vector. */
             inline constexpr fixed_vector()
-                : msize(0) {
+                : msize(static_cast<NT>(0)) {
             }
             inline constexpr fixed_vector(std::initializer_list<T> init_list)
-                : msize(init_list.size()) {
+                : msize(static_cast<NT>(init_list.size())) {
 
                   if (init_list.size() > N) [[unlikely]] {
                         throw std::out_of_range("Initializer list exceeds maximum size");
@@ -27,15 +29,22 @@ namespace boost {
             using iterator = typename std::array<T, N>::iterator;
             using const_iterator = typename std::array<T, N>::const_iterator;
 
+            /* Returns the maximum number of elements (N). */
             inline constexpr auto max_size() const {
                   return N;
             }
+
+            /* Returns the current number of elements in the vector. */
             inline constexpr auto size() const {
                   return this->msize;
             }
+
+            /* Checks whether the vector is completely empty. */
             inline constexpr auto empty() const {
                   return !this->size();
             }
+
+            /* Appends a copy of the given element to the end of the container. */
             inline constexpr auto push_back(const T &value) {
                   if (this->msize >= N) [[unlikely]] {
                         throw std::out_of_range("Overflow");
@@ -43,6 +52,8 @@ namespace boost {
                   this->mdata[this->msize++] = value;
                   return;
             }
+
+            /* Moves the given element to the end of the container. */
             inline constexpr auto push_back(T &&value) {
                   if (this->msize >= N) [[unlikely]] {
                         throw std::out_of_range("Overflow");
@@ -50,6 +61,8 @@ namespace boost {
                   this->mdata[this->msize++] = std::move(value);
                   return;
             }
+
+            /* Constructs an element in-place at the end of the container. */
             template <typename... Args>
             inline constexpr void emplace_back(Args &&...args) {
                   if (this->msize >= N) [[unlikely]] {
@@ -59,6 +72,8 @@ namespace boost {
                   ++this->msize;
                   return;
             }
+
+            /* Removes the last element from the container. */
             inline constexpr auto pop_back() {
                   if (!this->msize) [[unlikely]] {
                         throw std::out_of_range("Underflow");
@@ -66,6 +81,8 @@ namespace boost {
                   --this->msize;
                   return;
             }
+
+            /* Accesses the element at the specified index with bounds checking. */
             inline constexpr T &at(const NT idx) {
                   if (idx >= this->msize) [[unlikely]] {
                         throw std::out_of_range("Index out of range");
@@ -78,6 +95,8 @@ namespace boost {
                   }
                   return this->mdata[idx];
             }
+
+            /* Resets the dynamic size to 0 without clearing data arrays. */
             inline constexpr auto clear() {
                   this->msize = 0u;
                   return;
@@ -116,6 +135,8 @@ namespace boost {
                   }
                   return this->mdata.begin() + this->msize;
             }
+
+            /* Unchecked element access. @param idx Index to look up. */
             inline constexpr auto &operator[](const NT idx) {
                   return this->mdata[idx];
             }
@@ -142,6 +163,8 @@ namespace boost {
                   }
                   return this->mdata[idx];
             }
+
+            /* Iterators */
             inline constexpr auto begin() {
                   return this->mdata.begin();
             }
@@ -166,9 +189,13 @@ namespace boost {
             inline constexpr auto rend() const {
                   return this->mdata.rend();
             }
+
+            /* Validates if an index falls inside the active dynamic bounds. */
             inline constexpr auto contains_idx(const std::size_t idx) const {
                   return idx < this->msize;
             }
+
+            /* Returns a direct pointer to the underlying block of data. */
             inline constexpr auto data() noexcept {
                   return this->mdata.data();
             }
@@ -181,8 +208,8 @@ namespace boost {
             }
 
           private:
-            std::array<T, N> mdata{};
-            NT msize = 0u;
+            std::array<T, N> mdata{}; /* Data container */
+            NT msize = 0u;            /* Tracks underlying size */
       };
 
 } // namespace boost
